@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>EV Voltage Sensor Quiz</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f4f8;
+      padding: 40px;
+    }
+    #quiz-container {
+      background: white;
+      padding: 20px 30px;
+      max-width: 700px;
+      margin: auto;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+      display: none;
+    }
+    #entry-screen {
+      text-align: center;
+      margin: auto;
+      max-width: 400px;
+      padding: 30px;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    }
+    input[type="password"], input[type="text"] {
+      padding: 10px;
+      width: 80%;
+      margin: 10px 0;
+    }
+    button {
+      padding: 10px 20px;
+      margin-top: 10px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    #timer {
+      font-size: 18px;
+      color: red;
+      margin-bottom: 15px;
+    }
+    h2 {
+      margin-bottom: 20px;
+    }
+    .option {
+      margin: 10px 0;
+    }
+    #result {
+      margin-top: 30px;
+      font-size: 20px;
+      font-weight: bold;
+    }
+    #leaderboard {
+      margin-top: 20px;
+    }
+    #leaderboard ul {
+      padding-left: 20px;
+    }
+  </style>
+</head>
+<body>
+
+<div id="entry-screen">
+  <h2>Enter Quiz Access</h2>
+  <p>Please enter the password to access the quiz.</p>
+  <input type="password" id="quiz-password" placeholder="Password">
+  <br>
+  <button onclick="checkPassword()">Enter</button>
+</div>
+
+<div id="quiz-container">
+  <div id="timer">Time left: <span id="time">15</span> sec</div>
+  <h2 id="question">Question text</h2>
+  <div id="options"></div>
+  <button onclick="nextQuestion()">Next</button>
+  <div id="result"></div>
+  <div id="leaderboard"></div>
+</div>
+
+<script>
+  const quizData = [
+    {
+      question: "Why are isolated voltage sensors crucial in EV battery monitoring?",
+      options: [
+        "To minimize software complexity",
+        "To protect low-voltage systems from high-voltage spikes",
+        "To reduce electromagnetic noise",
+        "To increase charging speed"
+      ],
+      answer: 1
+    },
+    {
+      question: "Which type of voltage sensor provides galvanic isolation for high-voltage EV systems?",
+      options: [
+        "Shunt resistor",
+        "Resistive voltage divider",
+        "Hall-effect based voltage sensor",
+        "Thermocouple"
+      ],
+      answer: 2
+    },
+    {
+      question: "What is a common limitation of using resistive dividers directly with high-voltage EV batteries?",
+      options: [
+        "Overcurrent errors",
+        "Lack of electrical isolation",
+        "High-frequency distortion",
+        "Low signal resolution"
+      ],
+      answer: 1
+    },
+    {
+      question: "In regenerative braking, which sensor characteristic is critical for voltage measurement?",
+      options: [
+        "Small size",
+        "Fast response time",
+        "High impedance",
+        "Low offset"
+      ],
+      answer: 1
+    },
+    {
+      question: "What does a low Common Mode Rejection Ratio (CMRR) in voltage sensors lead to?",
+      options: [
+        "Accurate measurement under all conditions",
+        "Increased susceptibility to noise",
+        "Improved thermal compensation",
+        "Higher current draw"
+      ],
+      answer: 1
+    },
+    {
+      question: "How does temperature affect voltage sensor accuracy in EVs?",
+      options: [
+        "Causes random noise spikes",
+        "Improves accuracy at high temp",
+        "Can lead to offset drift and gain error",
+        "Has no noticeable effect"
+      ],
+      answer: 2
+    },
+    {
+      question: "Why are digital voltage sensors preferred in some EV applications?",
+      options: [
+        "Lower cost",
+        "Faster charging",
+        "No need for calibration",
+        "Better noise immunity and direct microcontroller interface"
+      ],
+      answer: 3
+    },
+    {
+      question: "Which fault could lead to a false voltage drop detection in a cell by the BMS?",
+      options: [
+        "Overcharging",
+        "Poor ADC resolution in sensor",
+        "Cell imbalance",
+        "Reverse current flow"
+      ],
+      answer: 1
+    },
+    {
+      question: "What role do low-pass filters play in EV voltage sensing?",
+      options: [
+        "Amplify voltage",
+        "Reduce common-mode voltage",
+        "Filter high-frequency EMI noise",
+        "Convert analog to digital"
+      ],
+      answer: 2
+    },
+    {
+      question: "Which tool combination is best for validating EV voltage sensors during load testing?",
+      options: [
+        "Basic multimeter",
+        "Thermal imaging camera",
+        "Differential probe with data logger",
+        "RF spectrum analyzer"
+      ],
+      answer: 2
+    }
+  ];
+
+  let currentQuestion = 0;
+  let score = 0;
+  let userName = "";
+  let questionTimer;
+  let timeLeft = 15;
+
+  function checkPassword() {
+    const passwordInput = document.getElementById("quiz-password").value;
+    if (passwordInput.trim().toLowerCase() === "sensor") {
+      document.getElementById("entry-screen").style.display = "none";
+      document.getElementById("quiz-container").style.display = "block";
+      loadQuestion();
+    } else {
+      alert("Incorrect password. Please try again.");
+    }
+  }
+
+  function startQuestionTimer() {
+    clearInterval(questionTimer);
+    timeLeft = 15;
+    updateTimerDisplay();
+    questionTimer = setInterval(() => {
+      timeLeft--;
+      updateTimerDisplay();
+      if (timeLeft <= 0) {
+        clearInterval(questionTimer);
+        nextQuestion(true);
+      }
+    }, 1000);
+  }
+
+  function updateTimerDisplay() {
+    document.getElementById("time").innerText = timeLeft;
+  }
+
+  function loadQuestion() {
+    const q = quizData[currentQuestion];
+    document.getElementById("question").innerText = `${currentQuestion + 1}. ${q.question}`;
+    const optionsDiv = document.getElementById("options");
+    optionsDiv.innerHTML = "";
+
+    q.options.forEach((opt, index) => {
+      const radioBtn = document.createElement("input");
+      radioBtn.type = "radio";
+      radioBtn.name = "option";
+      radioBtn.value = index;
+      radioBtn.id = `opt${index}`;
+
+      const label = document.createElement("label");
+      label.htmlFor = `opt${index}`;
+      label.innerText = opt;
+      label.style.marginLeft = "8px";
+
+      const div = document.createElement("div");
+      div.classList.add("option");
+      div.appendChild(radioBtn);
+      div.appendChild(label);
+
+      optionsDiv.appendChild(div);
+    });
+
+    document.querySelector("button").innerText = currentQuestion === quizData.length - 1 ? "Submit" : "Next";
+    startQuestionTimer();
+  }
+
+  function nextQuestion(auto = false) {
+    clearInterval(questionTimer);
+
+    const selected = document.querySelector('input[name="option"]:checked');
+    const selectedValue = selected ? parseInt(selected.value) : -1;
+
+    if (!auto && selectedValue === -1) {
+      alert("Please select an option.");
+      startQuestionTimer();
+      return;
+    }
+
+    if (selectedValue === quizData[currentQuestion].answer) {
+      score++;
+    }
+
+    currentQuestion++;
+
+    if (currentQuestion < quizData.length) {
+      loadQuestion();
+    } else {
+      submitQuiz();
+    }
+  }
+
+  function submitQuiz() {
+    clearInterval(questionTimer);
+    userName = prompt("Enter your name for the leaderboard:") || "Anonymous";
+    saveToLeaderboard(userName, score);
+
+    const quizContainer = document.getElementById("quiz-container");
+    quizContainer.innerHTML = `
+      <h2>Quiz Submitted</h2>
+      <p>Your Score: <strong>${score} / ${quizData.length}</strong></p>
+      <div id="leaderboard">
+        <h3>🏆 Leaderboard</h3>
+        <ul id="leaderboardList"></ul>
+      </div>
+    `;
+
+    showLeaderboard();
+  }
+
+  function saveToLeaderboard(name, score) {
+    let leaderboard = JSON.parse(localStorage.getItem("ev_leaderboard")) || [];
+    leaderboard.push({ name, score });
+    leaderboard.sort((a, b) => b.score - a.score);
+    leaderboard = leaderboard.slice(0, 100);
+    localStorage.setItem("ev_leaderboard", JSON.stringify(leaderboard));
+  }
+
+  function showLeaderboard() {
+    const list = document.getElementById("leaderboardList");
+    const leaderboard = JSON.parse(localStorage.getItem("ev_leaderboard")) || [];
+    list.innerHTML = "";
+    leaderboard.forEach((entry, index) => {
+      const li = document.createElement("li");
+      li.innerText = `${index + 1}. ${entry.name} - ${entry.score}`;
+      list.appendChild(li);
+    });
+  }
+</script>
+
+</body>
+</html>
